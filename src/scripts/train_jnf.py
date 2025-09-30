@@ -53,6 +53,9 @@ def get_trainer(devices, logger, max_epochs, gradient_clip_val, gradient_clip_al
                              #setup_checkpointing(),
                              ModelSummary(max_depth=2)
                                     ],
+                         precision=32,
+                         deterministic=False,
+                         benchmark=True #cuDNN faster with fixed input shape
 
                          )
 
