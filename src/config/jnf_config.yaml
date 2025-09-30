@@ -2,7 +2,7 @@
 seed: 123
 
 data:
-  n_channels: 3
+  n_channels: 2
   batch_size: 2
   prep_files: {
                 data: ./data/prep/prep_mix_ch3_sp5_small.hdf5,
@@ -16,7 +16,7 @@ data:
   n_workers: 10
 
 network:
-  n_channels: 3
+  n_channels: 2
   n_lstm_hidden1: 256
   n_lstm_hidden2: 128
   bidirectional: True
