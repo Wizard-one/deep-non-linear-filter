@@ -1,8 +1,8 @@
 import sys
 sys.path.append('.')
-import pytorch_lightning as pl
-from pytorch_lightning import loggers as pl_loggers
-from pytorch_lightning.callbacks import ModelSummary
+import lightning.pytorch as pl
+from lightning.pytorch import loggers as pl_loggers
+from lightning.pytorch.callbacks import ModelSummary
 from models.exp_jnf import JNFExp
 from models.models import FTJNF
 from typing import Optional
@@ -85,5 +85,5 @@ if __name__=="__main__":
 
     ## TRAIN
     trainer = get_trainer(logger=tb_logger, **config['training'])
-    trainer.fit(exp, dm)
+    trainer.fit(exp, datamodule=dm)
 
