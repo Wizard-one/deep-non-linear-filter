@@ -1,9 +1,10 @@
+import sys
+sys.path.append('.')
 import pytorch_lightning as pl
 from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.callbacks import ModelSummary
 from models.exp_jnf import JNFExp
 from models.models import FTJNF
-from data.datamodule import HDF5DataModule
 from typing import Optional
 import yaml
 from dcnet.dataset.utils.io import instantiate_class
