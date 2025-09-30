@@ -6,6 +6,7 @@ from models.models import FTJNF
 from data.datamodule import HDF5DataModule
 from typing import Optional
 import yaml
+from dcnet.dataset.utils.io import instantiate_class
 
 EXP_NAME='JNF'
 
@@ -63,10 +64,12 @@ if __name__=="__main__":
     tb_logger, version = setup_logging(config['logging']['tb_log_dir'])
 
     ## DATA
+    with open('configs/dataset_mix.yaml') as config_file: 
+        data_config = yaml.safe_load(config_file)
+    dm=instantiate_class(args=(),init=data_config["data"])
     data_config = config['data']
-    stft_length = data_config.get('stft_length_samples', 512)
-    stft_shift = data_config.get('stft_shift_samples', 256)
-    dm = HDF5DataModule(**data_config)
+    stft_length = 512
+    stft_shift = 256
 
     ## CONFIGURE EXPERIMENT
     ckpt_file = config['training'].get('resume_ckpt', None)
