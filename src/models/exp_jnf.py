@@ -39,8 +39,7 @@ class JNFExp(EnhancementExp):
         return speech_mask
 
     def shared_step(self, batch, batch_idx, stage: Literal['train', 'val']):
-
-        noisy_td, clean_td, noise_td = batch['noisy_td'], batch['clean_td'], batch['noise_td']
+        noisy_td, clean_td,noise_td, paras = batch  # x: [B,C,T], ys: [B,Spk,C,T]
         noisy_stft, clean_stft, noise_stft = self.get_stft_rep(noisy_td, clean_td, noise_td)
 
         # compute mask estimate
