@@ -221,11 +221,11 @@ class EnhancementExp(pl.LightningModule):
         tensorboard = self.logger.experiment
 
         cur_samples = len(noisy_td)
-        for i in range(min(self.trainer.datamodule.batch_size, n_samples, cur_samples)):
+        for i in range(min(self.trainer.datamodule.batch_size[0], n_samples, cur_samples)):
             log_noisy_name = f"{tag}/{str(batch_idx) if not batch_idx is None else ''}_{i}_noisy"
             tensorboard.add_audio(log_noisy_name, noisy_td[i], global_step=self.current_epoch,
-                                  sample_rate=self.trainer.datamodule.fs)
+                                  sample_rate=16000)
 
             log_enhanced_name = f"{tag}/{str(batch_idx) if not batch_idx is None else ''}_{i}_enhanced"
             tensorboard.add_audio(log_enhanced_name, enhanced_td[i], global_step=self.current_epoch,
-                                  sample_rate=self.trainer.datamodule.fs)
+                                  sample_rate=16000)
