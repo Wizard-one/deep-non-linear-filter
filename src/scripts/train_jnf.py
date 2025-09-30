@@ -65,7 +65,7 @@ if __name__=="__main__":
     tb_logger, version = setup_logging(config['logging']['tb_log_dir'])
 
     ## DATA
-    with open('../../configs/dataset_mix.yaml') as config_file: 
+    with open('../../../configs/dataset_mix.yaml') as config_file: 
         data_config = yaml.safe_load(config_file)
     dm=instantiate_class(args=(),init=data_config["data"])
     data_config = config['data']
