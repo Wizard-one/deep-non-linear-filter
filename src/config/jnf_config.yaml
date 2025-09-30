@@ -41,7 +41,7 @@ training:
   gradient_clip_algorithm: value
   strategy: ddp
   accelerator: gpu
-  devices: 4,5,6,7
+  devices: 4,5,6
 
 
 logging:
