@@ -1,0 +1,79 @@
+data:
+  class_path: dcnet.dataset.data_module.target_pickup_module
+  init_args:
+    batch_size: [2,2]
+    test_set: val
+    num_workers: 12
+    train_dataset:
+      class_path: dcnet.dataset.sim_real_mix_dataset.simulation_real_mix_dataset
+      init_args:
+        config: &train_config
+          class_path: dcnet.dataset.dataset_config
+          init_args:
+            direction_angle: [-30, 30]
+            target_array_distance: 0.15
+            snr: [-5, 15]
+            sir: [-5, 15]
+            audio_time_len: 4.0
+            dataset_len: 6000
+            dataset: train 
+            no_target_prob: 0
+            no_interfer_prob: 0.0
+        use_magnitude_augmentation: false
+        simulation_dataset:
+          class_path: dcnet.dataset.sim_dataset.sim_directional_dataset
+          init_args:
+            speech_dir: /data1/yanchenyi/project/dataset/dcnet/speech/
+            noise_dir: /data1/yanchenyi/project/dataset/dcnet/noise92/
+            rir_dir: /data1/yanchenyi/project/dataset/dcnet/RIR_uniform_d0.15_1spks
+            target: direct_path
+            rts: 0
+            config: *train_config
+        real_dataset:
+          class_path: dcnet.dataset.real_dataset.RealData
+          init_args:
+            data_dir: /data1/yanchenyi/project/dataset/dcnet/RealMAN/
+            meta_dir: /data1/yanchenyi/project/dataset/dcnet/RealMAN/train/train_static_source_location.csv
+            noise_dir: /data1/yanchenyi/project/dataset/dcnet/RealMAN/train/ma_noise/
+            use_mic_id: [0,27]
+            noise_use_given_mic: true
+            noise_mic_threshold: 0.001
+            noise_use_nearest_mic: false
+            config: *train_config
+    val_dataset:
+      class_path: dcnet.dataset.sim_real_mix_dataset.simulation_real_mix_dataset
+      init_args:
+        config: &val_config
+          class_path: dcnet.dataset.dataset_config
+          init_args:
+            direction_angle: [-30, 30]
+            target_array_distance: 0.15
+            snr: [-5, 15]
+            sir: [-5, 15]
+            audio_time_len: 4.0
+            dataset_len: 60
+            dataset: test 
+            no_target_prob: 0.0
+            has_interfer: true
+            has_noise: true
+        use_magnitude_augmentation: false
+        simulation_dataset:
+          class_path: dcnet.dataset.sim_dataset.sim_directional_dataset
+          init_args:
+            speech_dir: /data1/yanchenyi/project/dataset/dcnet/speech/
+            noise_dir: /data1/yanchenyi/project/dataset/dcnet/noise92/
+            rir_dir: /data1/yanchenyi/project/dataset/dcnet/RIR_uniform_d0.15_1spks
+            target: direct_path
+            rts: 0
+            config: *val_config
+        real_dataset:
+          class_path: dcnet.dataset.real_dataset.RealData
+          init_args:
+            data_dir: /data1/yanchenyi/project/dataset/dcnet/RealMAN/
+            meta_dir: /data1/yanchenyi/project/dataset/dcnet/RealMAN/val/val_static_source_location.csv
+            noise_dir: /data1/yanchenyi/project/dataset/dcnet/RealMAN/val/ma_noise/
+            use_mic_id: [0,27]
+            noise_use_given_mic: true
+            noise_mic_threshold: 0.001
+            noise_use_nearest_mic: false
+            config: *val_config
