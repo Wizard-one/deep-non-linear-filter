@@ -93,6 +93,6 @@ if __name__=="__main__":
 
     ## TRAIN
     trainer = get_trainer(logger=tb_logger, **config['training'])
-    trainer.fit(exp, datamodule=dm)
+    trainer.fit(exp, datamodule=dm,ckpt_path=ckpt_file)
     # trainer.test(exp, datamodule=dm)
 
