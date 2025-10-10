@@ -82,7 +82,7 @@ class JNFExp(EnhancementExp):
                                                                                  noise_stft[:, self.reference_channel, ...],
                                                                                  est_noise_stft)
 
-        loss = torch.mean(self.loss_alpha * (clean_td_loss + noise_td_loss) + (clean_mag_loss + noise_mag_loss))
+        loss = torch.mean(self.loss_alpha * (clean_td_loss ) + (clean_mag_loss ))
 
         # logging
         on_step = False
