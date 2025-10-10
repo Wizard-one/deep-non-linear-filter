@@ -108,18 +108,35 @@ class JNFExp(EnhancementExp):
         self.pesq_wb.update(yr_hat, yr)
 
     def test_step(self, batch, batch_idx):
-        x, ys, paras = batch
-        B = ys.shape[0]
-        yr = ys.squeeze(1)
+        noisy_td, clean_td,noise_td, paras = batch  # x: [B,C,T], ys: [B,Spk,C,T]
+        noisy_stft, clean_stft, noise_stft = self.get_stft_rep(noisy_td, clean_td, noise_td)
+
+        # compute mask estimate
+        stacked_noisy_stft = torch.concat((torch.real(noisy_stft), torch.imag(noisy_stft)), dim=1)
+
+        if self.model.output_type == 'IRM':
+            irm_speech_mask = self.model(stacked_noisy_stft)
+            speech_mask, noise_mask = irm_speech_mask, 1-irm_speech_mask
+        elif self.model.output_type == 'CRM':
+            stacked_speech_mask = self.model(stacked_noisy_stft)
+            speech_mask, noise_mask = self.get_complex_masks_from_stacked(stacked_speech_mask)
+        else:
+            raise ValueError(f'The output type {self.model.output_type} is not supported.')
+
+        # compute estimates
+        est_clean_stft = noisy_stft[:, self.reference_channel, ...] * speech_mask
+        est_noise_stft = noisy_stft[:, self.reference_channel, ...] * noise_mask
+        clean_td, noise_td, est_clean_td, est_noise_td = self.get_td_rep(clean_stft[:, self.reference_channel, ...], noise_stft[:, self.reference_channel, ...],
+                                                                         est_clean_stft, est_noise_stft)
+        
         meta, zero_target_mask, zero_inter_mask = self.get_angle_mask(paras, batch_idx)
 
-        yr_hat, Yr_hat, out_mask = self.forward(x)
         wavname = os.path.basename(f"{paras[0]['index']}_{paras[0]['angle']:.2f}.wav")
         if ((~zero_target_mask).sum()) > 0:
             self.target_metric(
-                x_ref=x[~zero_target_mask, 0],
-                yr_hat=yr_hat[~zero_target_mask],
-                yr=yr[~zero_target_mask],
+                x_ref=noisy_td[~zero_target_mask, 0],
+                yr_hat=est_clean_td[~zero_target_mask],
+                yr=clean_td[~zero_target_mask],
             )
         if paras[0]["index"] < 10:
             if self.name != "notag" and self.trainer.log_dir is not None:
@@ -130,9 +147,9 @@ class JNFExp(EnhancementExp):
                 folder = self.trainer.log_dir
             test_step_write_example(
                 self=self,
-                xr=x / torch.max(torch.abs(x)),
-                yr=ys,
-                yr_hat=yr_hat.unsqueeze(0),
+                xr=noisy_td / torch.max(torch.abs(noisy_td)),
+                yr=clean_td,
+                yr_hat=est_clean_td.unsqueeze(0),
                 sample_rate=16000,
                 paras=paras,
                 result_dict={},
