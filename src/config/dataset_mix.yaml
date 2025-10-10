@@ -62,7 +62,7 @@ data:
           init_args:
             speech_dir: /data1/yanchenyi/project/dataset/dcnet/speech/
             noise_dir: /data1/yanchenyi/project/dataset/dcnet/noise92/
-            rir_dir: /data1/yanchenyi/project/dataset/dcnet/RIR_uniform_d0.15_1spks
+            rir_dir: /data1/yanchenyi/project/dataset/dcnet/RIR_uniform_d0.15_1spks_test
             target: direct_path
             rts: 0
             config: *val_config
