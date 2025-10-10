@@ -51,7 +51,7 @@ data:
             snr: [-5, 15]
             sir: [-5, 15]
             audio_time_len: 4.0
-            dataset_len: 1000
+            dataset_len: 600
             dataset: test 
             no_target_prob: 0.0
             has_interfer: true
