@@ -1,5 +1,6 @@
 import sys
 sys.path.append('.')
+sys.path.append('..')
 import lightning.pytorch as pl
 from lightning.pytorch import loggers as pl_loggers
 from lightning.pytorch.callbacks import ModelSummary
