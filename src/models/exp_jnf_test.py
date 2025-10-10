@@ -48,8 +48,23 @@ class JNFExp(EnhancementExp):
     def forward(self, input):
         speech_mask = self.model(input)
         return speech_mask
-
     
+    @classmethod
+    def get_init_params(cls, config):
+        init_params = {
+            "model": FTJNF(**config['network']),
+            "learning_rate": config['experiment']['learning_rate'],
+            "weight_decay": config['experiment']['weight_decay'],
+            "loss_alpha": config['experiment']['loss_alpha'],
+            "stft_length": config['data']['stft_length_samples'],
+            "stft_shift": config['data']['stft_shift_samples'],
+            "cirm_comp_K": config['experiment']['cirm_comp_K'],
+            "cirm_comp_C": config['experiment']['cirm_comp_C'],
+            # "reference_channel": config['experiment'].get('reference_channel', 0)
+        }
+        return init_params  
+
+
     @staticmethod
     def get_angle_mask(paras, batch_idx):
         # TODO: 非常不好
