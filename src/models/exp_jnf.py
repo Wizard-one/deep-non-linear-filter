@@ -33,7 +33,22 @@ class JNFExp(EnhancementExp):
         self.reference_channel = reference_channel
 
         #self.example_input_array = torch.from_numpy(np.ones((2, 6, 513, 75), dtype=np.float32))
-
+        
+    @classmethod
+    def get_init_params(cls, config):
+        init_params = {
+            "model": FTJNF(**config['network']),
+            "learning_rate": config['experiment']['learning_rate'],
+            "weight_decay": config['experiment']['weight_decay'],
+            "loss_alpha": config['experiment']['loss_alpha'],
+            "stft_length": config['data']['stft_length_samples'],
+            "stft_shift": config['data']['stft_shift_samples'],
+            "cirm_comp_K": config['experiment']['cirm_comp_K'],
+            "cirm_comp_C": config['experiment']['cirm_comp_C'],
+            # "reference_channel": config['experiment'].get('reference_channel', 0)
+        }
+        return init_params  
+    
     def forward(self, input):
         speech_mask = self.model(input)
         return speech_mask
