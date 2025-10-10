@@ -150,8 +150,8 @@ class JNFExp(EnhancementExp):
             test_step_write_example(
                 self=self,
                 xr=noisy_td / torch.max(torch.abs(noisy_td)),
-                yr=clean_td,
-                yr_hat=est_clean_td.unsqueeze(0),
+                yr=clean_td.unsqueeze(1),
+                yr_hat=est_clean_td.unsqueeze(1),
                 sample_rate=16000,
                 paras=paras,
                 result_dict={},
