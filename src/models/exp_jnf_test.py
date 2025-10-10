@@ -1,0 +1,214 @@
+import json
+from typing import Any, Literal
+import torch
+from torch import nn
+from models.exp_enhancement import EnhancementExp
+from models.models import FTJNF
+from torchmetrics.audio.dnsmos import DeepNoiseSuppressionMeanOpinionScore as DNSMOS
+from torchmetrics.audio.pesq import PerceptualEvaluationSpeechQuality as PESQ
+import os
+import numpy as np
+from dcnet.models.utils.general_steps import test_step_write_example
+
+class JNFExp(EnhancementExp):
+
+    def __init__(self,
+                 model: nn.Module,
+                 learning_rate: float,
+                 weight_decay: float, 
+                 loss_alpha: float,
+                 stft_length: int,
+                 stft_shift: int,
+                 cirm_comp_K: float,
+                 cirm_comp_C: float, 
+                 reference_channel: int = 0):
+        super(JNFExp, self).__init__(model=model, cirm_comp_K=cirm_comp_K, cirm_comp_C=cirm_comp_C)
+
+        self.model = model
+
+        self.stft_length = stft_length
+        self.stft_shift = stft_shift
+
+        self.cirm_K = cirm_comp_K
+        self.cirm_C = cirm_comp_C
+
+        self.learning_rate = learning_rate
+        self.weight_decay = weight_decay
+        self.loss_alpha = loss_alpha
+
+        self.reference_channel = reference_channel
+        self.dnsmos = DNSMOS(fs=16000, personalized=False)
+        self.input_dnsmos = DNSMOS(fs=16000, personalized=False)
+        self.input_pesq_wb = PESQ(fs=16000, mode="wb")
+        self.pesq_wb = PESQ(fs=16000, mode="wb")
+
+
+        #self.example_input_array = torch.from_numpy(np.ones((2, 6, 513, 75), dtype=np.float32))
+
+    def forward(self, input):
+        speech_mask = self.model(input)
+        return speech_mask
+
+    def shared_step(self, batch, batch_idx, stage: Literal['train', 'val', 'test']):
+        noisy_td, clean_td,noise_td, paras = batch  # x: [B,C,T], ys: [B,Spk,C,T]
+        noisy_stft, clean_stft, noise_stft = self.get_stft_rep(noisy_td, clean_td, noise_td)
+
+        # compute mask estimate
+        stacked_noisy_stft = torch.concat((torch.real(noisy_stft), torch.imag(noisy_stft)), dim=1)
+
+        if self.model.output_type == 'IRM':
+            irm_speech_mask = self.model(stacked_noisy_stft)
+            speech_mask, noise_mask = irm_speech_mask, 1-irm_speech_mask
+        elif self.model.output_type == 'CRM':
+            stacked_speech_mask = self.model(stacked_noisy_stft)
+            speech_mask, noise_mask = self.get_complex_masks_from_stacked(stacked_speech_mask)
+        else:
+            raise ValueError(f'The output type {self.model.output_type} is not supported.')
+
+        # compute estimates
+        est_clean_stft = noisy_stft[:, self.reference_channel, ...] * speech_mask
+        est_noise_stft = noisy_stft[:, self.reference_channel, ...] * noise_mask
+        clean_td, noise_td, est_clean_td, est_noise_td = self.get_td_rep(clean_stft[:, self.reference_channel, ...], noise_stft[:, self.reference_channel, ...],
+                                                                         est_clean_stft, est_noise_stft)
+
+        # compute loss
+        clean_td_loss, noise_td_loss, clean_mag_loss, noise_mag_loss = self.loss(clean_td, est_clean_td, noise_td,
+                                                                                 est_noise_td,
+                                                                                 clean_stft[:, self.reference_channel, ...], est_clean_stft,
+                                                                                 noise_stft[:, self.reference_channel, ...],
+                                                                                 est_noise_stft)
+
+        loss = torch.mean(self.loss_alpha * (clean_td_loss + noise_td_loss) + (clean_mag_loss + noise_mag_loss))
+
+        # logging
+        on_step = False
+        self.log(f'{stage}/loss', loss, on_step=on_step, on_epoch=True, logger=True, sync_dist=True)
+        self.log(f'{stage}/clean_td_loss', clean_td_loss.mean(), on_step=on_step, on_epoch=True, logger=True, sync_dist=True)
+        self.log(f'{stage}/noise_td_loss', noise_td_loss.mean(), on_step=on_step, on_epoch=True, logger=True, sync_dist=True)
+        self.log(f'{stage}/clean_mag_loss', clean_mag_loss.mean(), on_step=on_step, on_epoch=True, logger=True, sync_dist=True)
+        self.log(f'{stage}/noise_mag_loss', noise_mag_loss.mean(), on_step=on_step, on_epoch=True, logger=True, sync_dist=True)
+        if batch_idx < 1:
+            self.log_batch_detailed_audio(noisy_td[:, self.reference_channel, ...], est_clean_td, batch_idx, stage)
+            self.log_batch_detailed_spectrograms(
+                [noisy_stft[:, self.reference_channel, ...], clean_stft[:, self.reference_channel, ...], noise_stft[:, self.reference_channel, ...], est_clean_stft, est_noise_stft],
+                batch_idx,
+                stage, n_samples=10)
+            # self.log_batch_detailed_maks([complex_speech_mask.abs(), complex_noise_mask.abs()], batch_idx, stage, n_samples=10)
+        if stage == 'val':
+            self.log(f'monitor_loss', loss, on_step=on_step, on_epoch=True, logger=True)
+            global_si_sdr = self.compute_global_si_sdr(est_clean_td, clean_td)
+            self.log('val/si_sdr', global_si_sdr.mean(), on_epoch=True, logger=True, sync_dist=True)
+
+        return loss
+    
+    @staticmethod
+    def get_angle_mask(paras, batch_idx):
+        # TODO: 非常不好
+        result, is_zero_target, is_zero_inter = {}, [], []
+        if not isinstance(paras, list):
+            raise NotImplementedError("paras should be a list of dicts")
+        for p in paras:
+            if "angle" not in result:
+                result["angle"] = []
+            if "angle_inter" not in result:
+                result["angle_inter"] = []
+            if "sample_id" not in result:
+                result["sample_id"] = []
+            if "batch_id" not in result:
+                result["batch_id"] = []
+            result["angle"].append(p["angle"])
+            result["angle_inter"].append(p["angle_inter"])
+            result["sample_id"].append(p["index"])
+            result["batch_id"].append(batch_idx)
+            is_zero_target.append(p["is_zero_target"])
+            is_zero_inter.append(p["is_zero_interfer"])
+        for key in result:
+            result[key] = np.array(result[key])
+        # TODO 是否转到torch.tensor device 上会更快点?
+        return (
+            result,
+            np.array(is_zero_target),
+            np.array(is_zero_inter),
+        )    
+
+    def on_test_epoch_start(self):
+        if self.trainer.log_dir is None:
+            raise ValueError("Logger log_dir is not set. Cannot save metrics.")
+        os.makedirs(self.trainer.log_dir, exist_ok=True)
+        return super().on_test_epoch_start()
+    
+    def target_metric(self, x_ref, yr_hat, yr):
+        self.input_dnsmos.update(x_ref)
+        self.dnsmos.update(yr_hat)
+        self.input_pesq_wb.update(x_ref, yr)
+        self.pesq_wb.update(yr_hat, yr)
+
+    def test_step(self, batch, batch_idx):
+        x, ys, paras = batch
+        B = ys.shape[0]
+        yr = ys.squeeze(1)
+        meta, zero_target_mask, zero_inter_mask = self.get_angle_mask(paras, batch_idx)
+
+        yr_hat, Yr_hat, out_mask = self.forward(x)
+        wavname = os.path.basename(f"{paras[0]['index']}_{paras[0]['angle']:.2f}.wav")
+        if ((~zero_target_mask).sum()) > 0:
+            self.target_metric(
+                x_ref=x[~zero_target_mask, 0],
+                yr_hat=yr_hat[~zero_target_mask],
+                yr=yr[~zero_target_mask],
+            )
+        if paras[0]["index"] < 10:
+            if self.name != "notag" and self.trainer.log_dir is not None:
+                rootfolder = self.trainer.log_dir.split("/")[0]
+                folder = f"{rootfolder}/{self.save_to}/{self.name}"
+                os.makedirs(folder, exist_ok=True)
+            else:
+                folder = self.trainer.log_dir
+            test_step_write_example(
+                self=self,
+                xr=x / torch.max(torch.abs(x)),
+                yr=ys,
+                yr_hat=yr_hat.unsqueeze(0),
+                sample_rate=16000,
+                paras=paras,
+                result_dict={},
+                wavname=wavname,
+                exp_save_path=folder,
+            )
+    def on_test_epoch_end(self) -> None:
+        #     """calculate heavy metrics for every N epochs"""
+        if self.name != "notag" and self.trainer.log_dir is not None:
+            rootfolder = self.trainer.log_dir.split("/")[0]
+            folder = f"{rootfolder}/{self.save_to}"
+            os.makedirs(folder, exist_ok=True)
+        elif self.trainer.log_dir is not None:
+            folder = self.trainer.log_dir
+        else:
+            folder = "."
+        dnsmos_input = self.input_dnsmos.compute()
+        dnsmos = self.dnsmos.compute()
+        pesq_input = self.input_pesq_wb.compute()
+        pesq = self.pesq_wb.compute()
+        if self.trainer.is_global_zero:
+            json_path = os.path.join(folder, "loss_result.json")
+            result = {}
+            result.update(
+                {
+                    "val/input_dnsmos_p808": dnsmos_input[0].item(),
+                    "val/input_dnsmos_sig": dnsmos_input[1].item(),
+                    "val/input_dnsmos_bak": dnsmos_input[2].item(),
+                    "val/input_dnsmos_ovr": dnsmos_input[3].item(),
+                    "val/dnsmos_p808": dnsmos[0].item(),
+                    "val/dnsmos_sig": dnsmos[1].item(),
+                    "val/dnsmos_bak": dnsmos[2].item(),
+                    "val/dnsmos_ovr": dnsmos[3].item(),
+                    "val/input_pesq_wb": pesq_input.item(),
+                    "val/pesq_wb": pesq.item(),
+                }
+            )
+            with open(json_path, "w") as f:
+                json.dump({k: float(v) for k, v in result.items()}, f, indent=2)
+        self.input_dnsmos.reset()
+        self.dnsmos.reset()
+        self.input_pesq_wb.reset()
+        self.pesq_wb.reset()
