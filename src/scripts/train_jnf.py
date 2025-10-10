@@ -10,6 +10,7 @@ from typing import Optional
 import yaml
 from dcnet.dataset.utils.io import instantiate_class
 import torch
+from lightning.pytorch.callbacks import ModelCheckpoint
 torch.backends.cuda.matmul.allow_tf32 = True  # The flag below controls whether to allow TF32 on matmul. This flag defaults to False in PyTorch 1.12 and later.
 torch.backends.cudnn.allow_tf32 = True  # The flag below controls whether to allow TF32 on cuDNN. This flag defaults to True.
 
@@ -41,24 +42,33 @@ def load_model(ckpt_file: str,
     return model
 
 def get_trainer(devices, logger, max_epochs, gradient_clip_val, gradient_clip_algorithm, strategy, accelerator):
-    return pl.Trainer(enable_model_summary=True,
-                         logger=logger,
-                         devices=devices,
-                         log_every_n_steps=1,
-                         max_epochs=max_epochs,
-                         gradient_clip_val = gradient_clip_val,
-                         gradient_clip_algorithm = gradient_clip_algorithm,
-                         strategy = strategy,
-                         accelerator = accelerator,
-                         callbacks=[
-                             #setup_checkpointing(),
-                             ModelSummary(max_depth=2)
-                                    ],
-                         precision=32,
-                         deterministic=False,
-                         benchmark=True #cuDNN faster with fixed input shape
+    checkpoint_callback = ModelCheckpoint(
+        save_top_k=-1,  # save all checkpoints
+        every_n_epochs=1,  # save every epoch
+        filename="epoch{epoch}-step{step}",
+        save_weights_only=False,
+        monitor="monitor_loss"  # not monitoring any metric
+        save_last=True,
+    )
 
-                         )
+    return pl.Trainer(
+        enable_model_summary=True,
+        logger=logger,
+        devices=devices,
+        log_every_n_steps=1,
+        max_epochs=max_epochs,
+        gradient_clip_val=gradient_clip_val,
+        gradient_clip_algorithm=gradient_clip_algorithm,
+        strategy=strategy,
+        accelerator=accelerator,
+        callbacks=[
+            checkpoint_callback,
+            ModelSummary(max_depth=2)
+        ],
+        precision=32,
+        deterministic=False,
+        benchmark=True  # cuDNN faster with fixed input shape
+    )
 
 if __name__=="__main__":
 
