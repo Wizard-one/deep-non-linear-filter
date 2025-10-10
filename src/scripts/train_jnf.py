@@ -47,7 +47,7 @@ def get_trainer(devices, logger, max_epochs, gradient_clip_val, gradient_clip_al
         every_n_epochs=1,  # save every epoch
         filename="epoch{epoch}-step{step}",
         save_weights_only=False,
-        monitor="monitor_loss"  # not monitoring any metric
+        monitor="monitor_loss",  # not monitoring any metric
         save_last=True,
     )
 
