@@ -1,7 +1,7 @@
 data:
   class_path: dcnet.dataset.data_module.target_pickup_module
   init_args:
-    batch_size: [1,1]
+    batch_size: [1,10]
     test_set: val
     num_workers: 12
     train_dataset:

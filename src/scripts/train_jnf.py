@@ -80,8 +80,8 @@ if __name__=="__main__":
     stft_shift = 256
 
     ## CONFIGURE EXPERIMENT
-    # ckpt_file = "logs/tb_logs/JNF/version_1/checkpoints/epoch=249-step=250000.ckpt"
-    ckpt_file = None
+    ckpt_file = "logs/tb_logs/JNF/version_0/checkpoints/epoch=53-step=54000.ckpt"
+    # ckpt_file = None
     if not ckpt_file is None:
         exp = load_model(ckpt_file, config)
     else:
