@@ -1,7 +1,7 @@
 data:
   class_path: dcnet.dataset.data_module.target_pickup_module
   init_args:
-    batch_size: [2,2]
+    batch_size: [1,1]
     test_set: val
     num_workers: 12
     train_dataset:
@@ -51,7 +51,7 @@ data:
             snr: [-5, 15]
             sir: [-5, 15]
             audio_time_len: 4.0
-            dataset_len: 60
+            dataset_len: 6000
             dataset: test 
             no_target_prob: 0.0
             has_interfer: true
