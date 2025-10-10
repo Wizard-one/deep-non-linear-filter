@@ -13,7 +13,7 @@ import torch
 torch.backends.cuda.matmul.allow_tf32 = True  # The flag below controls whether to allow TF32 on matmul. This flag defaults to False in PyTorch 1.12 and later.
 torch.backends.cudnn.allow_tf32 = True  # The flag below controls whether to allow TF32 on cuDNN. This flag defaults to True.
 
-EXP_NAME='clean_loss'
+EXP_NAME='clean_loss_fix_noise_scale'
 
 def setup_logging(tb_log_dir: str, version_id: Optional[int]= None):
     """
@@ -80,8 +80,8 @@ if __name__=="__main__":
     stft_shift = 256
 
     ## CONFIGURE EXPERIMENT
-    ckpt_file = "/home/yanchenyi/project/dcnet/submodules/FTJNF/logs/tb_logs/clean_loss/checkpoints/epoch=74-step=75000.ckpt"
-    # ckpt_file = None
+    # ckpt_file = "/home/yanchenyi/project/dcnet/submodules/FTJNF/logs/tb_logs/clean_loss/checkpoints/epoch=74-step=75000.ckpt"
+    ckpt_file = None
     if not ckpt_file is None:
         exp = load_model(ckpt_file, config)
     else:
@@ -93,6 +93,6 @@ if __name__=="__main__":
 
     ## TRAIN
     trainer = get_trainer(logger=tb_logger, **config['training'])
-    trainer.fit(exp, datamodule=dm,ckpt_path=ckpt_file)
+    trainer.fit(exp, datamodule=dm)
     # trainer.test(exp, datamodule=dm)
 
