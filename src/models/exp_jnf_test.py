@@ -41,7 +41,7 @@ class JNFExp(EnhancementExp):
         self.input_dnsmos = DNSMOS(fs=16000, personalized=False)
         self.input_pesq_wb = PESQ(fs=16000, mode="wb")
         self.pesq_wb = PESQ(fs=16000, mode="wb")
-        self.save_to="final/JNF"
+        self.save_to="logs/final/JNF"
         self.name="jnf"
 
 
@@ -116,14 +116,8 @@ class JNFExp(EnhancementExp):
         # compute mask estimate
         stacked_noisy_stft = torch.concat((torch.real(noisy_stft), torch.imag(noisy_stft)), dim=1)
 
-        if self.model.output_type == 'IRM':
-            irm_speech_mask = self.model(stacked_noisy_stft)
-            speech_mask, noise_mask = irm_speech_mask, 1-irm_speech_mask
-        elif self.model.output_type == 'CRM':
-            stacked_speech_mask = self.model(stacked_noisy_stft)
-            speech_mask, noise_mask = self.get_complex_masks_from_stacked(stacked_speech_mask)
-        else:
-            raise ValueError(f'The output type {self.model.output_type} is not supported.')
+        stacked_speech_mask = self.model(stacked_noisy_stft)
+        speech_mask, noise_mask = self.get_complex_masks_from_stacked(stacked_speech_mask)
 
         # compute estimates
         est_clean_stft = noisy_stft[:, self.reference_channel, ...] * speech_mask
