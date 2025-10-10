@@ -86,11 +86,12 @@ class JNFExp(EnhancementExp):
 
         # logging
         on_step = False
+        batch_size = 6 if stage == 'train' else 60
         self.log(f'{stage}/loss', loss, on_step=on_step, on_epoch=True, logger=True, sync_dist=True)
-        self.log(f'{stage}/clean_td_loss', clean_td_loss.mean(), on_step=on_step, on_epoch=True, logger=True, sync_dist=True)
-        self.log(f'{stage}/noise_td_loss', noise_td_loss.mean(), on_step=on_step, on_epoch=True, logger=True, sync_dist=True)
-        self.log(f'{stage}/clean_mag_loss', clean_mag_loss.mean(), on_step=on_step, on_epoch=True, logger=True, sync_dist=True)
-        self.log(f'{stage}/noise_mag_loss', noise_mag_loss.mean(), on_step=on_step, on_epoch=True, logger=True, sync_dist=True)
+        self.log(f'{stage}/clean_td_loss', clean_td_loss.mean(), on_step=on_step, on_epoch=True, logger=True, sync_dist=True,batch_size=batch_size)
+        self.log(f'{stage}/noise_td_loss', noise_td_loss.mean(), on_step=on_step, on_epoch=True, logger=True, sync_dist=True,batch_size=batch_size)
+        self.log(f'{stage}/clean_mag_loss', clean_mag_loss.mean(), on_step=on_step, on_epoch=True, logger=True, sync_dist=True,batch_size=batch_size)
+        self.log(f'{stage}/noise_mag_loss', noise_mag_loss.mean(), on_step=on_step, on_epoch=True, logger=True, sync_dist=True,batch_size=batch_size)
         if batch_idx < 1:
             self.log_batch_detailed_audio(noisy_td[:, self.reference_channel, ...], est_clean_td, batch_idx, stage)
             self.log_batch_detailed_spectrograms(
@@ -99,8 +100,8 @@ class JNFExp(EnhancementExp):
                 stage, n_samples=10)
             # self.log_batch_detailed_maks([complex_speech_mask.abs(), complex_noise_mask.abs()], batch_idx, stage, n_samples=10)
         if stage == 'val':
-            self.log(f'monitor_loss', loss, on_step=on_step, on_epoch=True, logger=True)
+            self.log(f'monitor_loss', loss, on_step=on_step, on_epoch=True, logger=True,batch_size=batch_size)
             global_si_sdr = self.compute_global_si_sdr(est_clean_td, clean_td)
-            self.log('val/si_sdr', global_si_sdr.mean(), on_epoch=True, logger=True, sync_dist=True)
+            self.log('val/si_sdr', global_si_sdr.mean(), on_epoch=True, logger=True, sync_dist=True,batch_size=batch_size)
 
         return loss
