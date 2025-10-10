@@ -41,6 +41,8 @@ class JNFExp(EnhancementExp):
         self.input_dnsmos = DNSMOS(fs=16000, personalized=False)
         self.input_pesq_wb = PESQ(fs=16000, mode="wb")
         self.pesq_wb = PESQ(fs=16000, mode="wb")
+        self.save_to="final/JNF"
+        self.name="jnf"
 
 
         #self.example_input_array = torch.from_numpy(np.ones((2, 6, 513, 75), dtype=np.float32))
