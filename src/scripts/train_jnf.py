@@ -3,7 +3,7 @@ sys.path.append('.')
 import lightning.pytorch as pl
 from lightning.pytorch import loggers as pl_loggers
 from lightning.pytorch.callbacks import ModelSummary
-from models.exp_jnf import JNFExp
+from models.exp_jnf_test import JNFExp
 from models.models import FTJNF
 from typing import Optional
 import yaml
@@ -79,7 +79,7 @@ if __name__=="__main__":
     stft_shift = 256
 
     ## CONFIGURE EXPERIMENT
-    ckpt_file = config['training'].get('resume_ckpt', None)
+    ckpt_file = "logs/tb_logs/JNF/version_1/checkpoints/epoch=249-step=250000.ckpt"
     if not ckpt_file is None:
         exp = load_model(ckpt_file, config)
     else:
@@ -91,5 +91,6 @@ if __name__=="__main__":
 
     ## TRAIN
     trainer = get_trainer(logger=tb_logger, **config['training'])
-    trainer.fit(exp, datamodule=dm)
+    # trainer.fit(exp, datamodule=dm)
+    trainer.test(exp, datamodule=dm)
 

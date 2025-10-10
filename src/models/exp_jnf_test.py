@@ -139,7 +139,7 @@ class JNFExp(EnhancementExp):
                 yr=clean_td[~zero_target_mask],
             )
         if paras[0]["index"] < 10:
-            if self.name != "notag" and self.trainer.log_dir is not None:
+            if self.trainer.log_dir is not None:
                 rootfolder = self.trainer.log_dir.split("/")[0]
                 folder = f"{rootfolder}/{self.save_to}/{self.name}"
                 os.makedirs(folder, exist_ok=True)
@@ -158,7 +158,7 @@ class JNFExp(EnhancementExp):
             )
     def on_test_epoch_end(self) -> None:
         #     """calculate heavy metrics for every N epochs"""
-        if self.name != "notag" and self.trainer.log_dir is not None:
+        if self.trainer.log_dir is not None:
             rootfolder = self.trainer.log_dir.split("/")[0]
             folder = f"{rootfolder}/{self.save_to}"
             os.makedirs(folder, exist_ok=True)
