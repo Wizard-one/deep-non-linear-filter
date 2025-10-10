@@ -13,7 +13,7 @@ import torch
 torch.backends.cuda.matmul.allow_tf32 = True  # The flag below controls whether to allow TF32 on matmul. This flag defaults to False in PyTorch 1.12 and later.
 torch.backends.cudnn.allow_tf32 = True  # The flag below controls whether to allow TF32 on cuDNN. This flag defaults to True.
 
-EXP_NAME='JNF'
+EXP_NAME='clean_loss'
 
 def setup_logging(tb_log_dir: str, version_id: Optional[int]= None):
     """
