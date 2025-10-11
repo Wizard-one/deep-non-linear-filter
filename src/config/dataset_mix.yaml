@@ -51,10 +51,10 @@ data:
             snr: [-5, 15]
             sir: [-5, 15]
             audio_time_len: 4.0
-            dataset_len: 600
+            dataset_len: 6000
             dataset: test 
             no_target_prob: 0.0
-            has_interfer: true
+            has_interfer: false
             has_noise: true
         use_magnitude_augmentation: false
         simulation_dataset:
@@ -71,7 +71,7 @@ data:
           init_args:
             data_dir: /data1/yanchenyi/project/dataset/dcnet/RealMAN/
             meta_dir: /data1/yanchenyi/project/dataset/dcnet/RealMAN/val/val_static_source_location.csv
-            noise_dir: /data1/yanchenyi/project/dataset/dcnet/RealMAN/val/ma_noise/
+            noise_dir: /data1/yanchenyi/project/dataset/dcnet/RealMAN/test/ma_noise/
             use_mic_id: [0,27]
             noise_use_given_mic: true
             noise_mic_threshold: 0.001
