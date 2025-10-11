@@ -99,7 +99,7 @@ if __name__=="__main__":
                     stft_length=stft_length,
                     stft_shift=stft_shift,
                     **config['experiment'])
-    ckpt_file = "/home/yanchenyi/project/dcnet/submodules/FTJNF/logs/tb_logs/clean_loss_fix_noise_scale/version_0/checkpoints/epoch=28-step=29000.ckpt"
+    ckpt_file = "/home/yanchenyi/project/dcnet/submodules/FTJNF/logs/tb_logs/clean_loss_fix_noise_scale/version_2/checkpoints/epochepoch=236-stepstep=237000.ckpt"
 
     ## TRAIN
     trainer = get_trainer(logger=tb_logger, **config['training'])

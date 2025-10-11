@@ -1,5 +1,5 @@
 
-seed: 123
+seed: 42
 
 data:
   n_channels: 2
